@@ -50,15 +50,6 @@ def logout_view(request):
     return redirect('login')  # Redirect to login page
 
 
-def instructions_view(request):
-    student_id = request.session.get('student_id')
-    if not student_id:
-        return redirect('login')
-    
-    student = Student.objects.get(id=student_id)
-    return render(request, 'app1/instructions.html', {'student_name': student.name})
-
-
     # student_id = request.session.get('student_id')
     # if not student_id:
     #     return redirect('login')
@@ -76,39 +67,26 @@ def start_exam_view(request):
 
     if request.method == 'POST':
         if 'test' in request.POST:
-            selected_test = request.POST.get('test')
+            selected_test = request.POST.get('test', '').strip().lower()
             request.session['selected_test'] = selected_test
+            request.session.modified = True
 
-            # Set exam timing only once
             if 'start_time' not in request.session:
                 start_time = datetime.now()
                 end_time = start_time + timedelta(minutes=10)
                 request.session['start_time'] = start_time.isoformat()
                 request.session['end_time'] = end_time.isoformat()
+                request.session.modified = True
                 print("✅ Start Time Set:", request.session['start_time'])
                 print("✅ End Time Set:", request.session['end_time'])
 
-        else:
-            selected_test = request.session.get('selected_test')
-            questions = Question.objects.filter(subject=selected_test)
-            for question in questions:
-                answer_value = request.POST.get(f'question_{question.id}')
-                if answer_value:
-                    print(f"💾 Saving answer: Q{question.id} = {answer_value}")
-                    Answer.objects.update_or_create(
-                        student=student,
-                        question=question,
-                        defaults={'selected_answer': answer_value.upper()}
-                    )
-                else:
-                    print(f"⚠️ No answer selected for Q{question.id}")
-            return redirect('submit_exam')
+            return redirect('start_exam')
 
     selected_test = request.session.get('selected_test')
     if not selected_test:
         return redirect('instructions')
 
-    questions = Question.objects.filter(subject=selected_test)
+    questions = Question.objects.filter(subject__iexact=selected_test)
 
     # Convert session strings to datetime objects
     start_time_str = request.session.get('start_time')
@@ -131,81 +109,62 @@ def submit_exam_view(request):
 
     student = Student.objects.get(id=student_id)
 
-    # Prevent double submission
-    if Result.objects.filter(student=student).exists():
-        print("🛑 Submission blocked: student already has result.")
-        return redirect('thank_you')
-
     selected_test = request.session.get('selected_test')
-    questions = Question.objects.filter(subject=selected_test)
+    if not selected_test:
+        messages.error(request, "No exam subject selected. Please start the exam again.")
+        return redirect('instructions')
 
-    # ✅ Save answers
-    print(f"\n💾 Saving answers for student ID: {student.id} | Subject: {selected_test}")
+    questions = Question.objects.filter(subject__iexact=selected_test)
+    if not questions.exists():
+        messages.error(request, "No questions found for the selected exam.")
+        return redirect('instructions')
+
+    if request.method != 'POST':
+        return redirect('start_exam')
+
+    attempted = 0
+    correct_answers = 0
+
     for question in questions:
         answer_value = request.POST.get(f'question_{question.id}')
         if answer_value:
-            print(f"📝 Q{question.id}: Selected Answer = {answer_value}")
+            selected_answer = answer_value.strip().upper()
             Answer.objects.update_or_create(
                 student=student,
                 question=question,
-                defaults={'selected_answer': answer_value.upper()}
+                defaults={'selected_answer': selected_answer}
             )
-        else:
-            print(f"⚠️ Q{question.id} was skipped.")
-
-    # ✅ Fetch saved answers now
-    answers = Answer.objects.filter(student=student)
-    total_questions = answers.count()
-    correct_answers = 0
-    attempted = 0
-
-    print(f"\n📊 Submitting exam for student ID: {student_id}")
-    print(f"🧾 Total Answers Fetched: {total_questions}")
-
-    for answer in answers:
-        qid = answer.question.id
-        qtext = answer.question.text
-        correct = answer.question.correct_answer.strip().upper()
-
-        if answer.selected_answer:
-            selected = answer.selected_answer.strip().upper()
             attempted += 1
-
-            print(f"🔍 Q{qid}: {qtext}")
-            print(f"✅ Correct: {correct}, 📝 Selected: {selected}")
-
-            if selected == correct:
+            if selected_answer == question.correct_answer.strip().upper():
                 correct_answers += 1
-                print("✅ Result: CORRECT")
-            else:
-                print("❌ Result: WRONG")
         else:
-            print(f"⚠️ Q{qid} skipped: No answer selected")
+            Answer.objects.update_or_create(
+                student=student,
+                question=question,
+                defaults={'selected_answer': None}
+            )
 
+    total_questions = questions.count()
     wrong_answers = attempted - correct_answers
-    score = correct_answers
-    percentage = (score / questions.count()) * 100 if questions else 0
-
-    print(f"\n📋 Summary for Student {student.name}:")
-    print(f"✅ Correct: {correct_answers}, ❌ Wrong: {wrong_answers}, 🎯 Attempted: {attempted}, 📈 Score: {score}, 🧮 Percentage: {round(percentage, 2)}%")
+    percentage = (correct_answers / total_questions) * 100 if total_questions else 0
 
     Result.objects.update_or_create(
         student=student,
-        defaults={'score': score, 'submitted_at': timezone.now()}
+        defaults={'score': correct_answers, 'submitted_at': timezone.now()}
     )
 
-    # Clear session timing
     request.session.pop('start_time', None)
     request.session.pop('end_time', None)
 
     request.session['result_data'] = {
-        'score': score,
+        'score': correct_answers,
         'correct': correct_answers,
         'wrong': wrong_answers,
         'attempted': attempted,
-        'total': questions.count(),
+        'total': total_questions,
         'percentage': round(percentage, 2)
     }
+    request.session.modified = True
 
     return redirect('thank_you')
 
@@ -217,14 +176,41 @@ def thank_you_view(request):
 
     student = Student.objects.get(id=student_id)
     result = Result.objects.get(student=student)
-    result_data = request.session.get('result_data', {})
+    result_data = request.session.get('result_data')
+
+    if not result_data:
+        selected_test = request.session.get('selected_test')
+        if selected_test:
+            answers = Answer.objects.filter(student=student, question__subject__iexact=selected_test)
+            total = Question.objects.filter(subject__iexact=selected_test).count()
+        else:
+            answers = Answer.objects.filter(student=student)
+            total = answers.count()
+
+        attempted = answers.exclude(selected_answer__isnull=True).exclude(selected_answer__exact='').count()
+        correct_answers = sum(
+            1 for answer in answers
+            if answer.selected_answer and answer.selected_answer.strip().upper() == answer.question.correct_answer.strip().upper()
+        )
+        wrong_answers = attempted - correct_answers
+        percentage = (correct_answers / total) * 100 if total else 0
+
+        result_data = {
+            'score': correct_answers,
+            'correct': correct_answers,
+            'wrong': wrong_answers,
+            'attempted': attempted,
+            'total': total,
+            'percentage': round(percentage, 2)
+        }
+        request.session['result_data'] = result_data
+        request.session.modified = True
 
     return render(request, 'app1/thank_you.html', {
         'student_name': student.name,
         'result_data': result_data,
         'score': result.score
     })
-
 
 
 @staff_member_required
