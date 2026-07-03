@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -56,5 +56,144 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GSCT Online Exam Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(to right, #4b6cb7, #182848);
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .navbar {
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+    .navbar-brand, .nav-link {
+      color: #fff !important;
+      font-weight: 500;
+    }
+    .hero {
+      padding: 100px 0;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: bold;
+    }
+    .btn-custom {
+      background-color: #fff;
+      color: #4b6cb7;
+      font-weight: bold;
+      border-radius: 30px;
+      padding: 12px 30px;
+      font-size: 18px;
+      transition: all 0.3s ease-in-out;
+    }
+    .btn-custom:hover {
+      background-color: transparent;
+      color: #fff;
+      border: 2px solid #fff;
+    }
+    .card-style {
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      border: none;
+    }
+    .announcement, .footer {
+      background-color: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      margin-top: 40px;
+      border-radius: 15px;
+    }
+    .footer p {
+      margin: 0;
+    }
+    .table th, .table td {
+      color: #fff;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="#">GSCT Exam Portal</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Exams</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Results</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Login</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <h1 class="mb-4">Welcome to GSCT Online Exam Portal</h1>
+      <p class="lead mb-5">Secure, Simple & Smart Platform for Online Examinations</p>
+      <a href="{% url 'login' %}" class="btn btn-custom">Login to Start Exam</a>
+    </div>
+  </section>
+
+  <!-- Announcements -->
+  <div class="container announcement">
+    <h4 class="mb-3">📢 Announcements</h4>
+    <ul>
+      <li>Semester Exam Schedule Released – <a href="#" class="text-info">View Details</a></li>
+      <li>New Login System Implemented for Security</li>
+      <li>Last Date for Exam Registration: May 28, 2025</li>
+    </ul>
+  </div>
+
+  <!-- Upcoming Exams -->
+  <div class="container mt-5">
+    <h4 class="text-center mb-4">📅 Upcoming Exams</h4>
+    <div class="table-responsive">
+      <table class="table table-hover text-white">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Subject</th>
+            <th>Course</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>May 30, 2025</td>
+            <td>Data Structures</td>
+            <td>B.Tech CSE 2nd Year</td>
+            <td>10:00 AM - 12:00 PM</td>
+          </tr>
+          <tr>
+            <td>June 2, 2025</td>
+            <td>Digital Marketing</td>
+            <td>MBA 1st Year</td>
+            <td>02:00 PM - 04:00 PM</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer text-center mt-5">
+    <p>© 2025 GSCT Institute | All Rights Reserved</p>
+    <p>Email: support@gsct.edu | Phone: +91-98765-43210</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -1,14 +1,86 @@
 <!-- templates/app1/thank_you.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Thank You</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Exam Result</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .result-card {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .result-header {
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .score-circle {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #198754;
+    }
+    .result-summary {
+      font-size: 1.25rem;
+      margin-top: 20px;
+    }
+    @media (max-width: 576px) {
+      .result-card {
+        margin: 20px 10px;
+        padding: 20px;
+      }
+      .score-circle {
+        font-size: 3rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container text-center mt-5">
-        <h2>Thank you for giving the exam!</h2>
-        <p>Best of luck for your results.</p>
+  <div class="container">
+    <div class="result-card text-center shadow-sm">
+      <h2 class="result-header">Thank You, {{ student_name }}!</h2>
+      <p class="mb-4">You have successfully completed the exam.</p>
+
+      <div class="score-circle mb-4">
+        {{ result_data.score }} / {{ result_data.total }}
+      </div>
+
+      <h4 class="mb-3">Result Summary</h4>
+      <ul class="list-group list-group-flush result-summary">
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Correct Answers
+          <span class="badge bg-success rounded-pill">{{ result_data.correct }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Wrong Answers
+          <span class="badge bg-danger rounded-pill">{{ result_data.wrong }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Attempted Questions
+          <span class="badge bg-primary rounded-pill">{{ result_data.attempted }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Total Questions
+          <span class="badge bg-secondary rounded-pill">{{ result_data.total }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Percentage Score
+          <span class="badge bg-info text-dark rounded-pill">{{ result_data.percentage }}%</span>
+        </li>
+      </ul>
+
+      <div class="mt-4">
+        <a href="{% url 'logout' %}" class="btn btn-outline-danger me-2">Logout</a>
+        <a href="{% url 'instructions' %}" class="btn btn-outline-primary">Back to Instructions</a>
+      </div>
     </div>
+  </div>
 </body>
 </html>

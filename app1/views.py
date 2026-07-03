@@ -1,32 +1,37 @@
-from django.shortcuts import render
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render, redirect
+from .forms import LoginForm
+from .models import Student
+from django.contrib import messages
+from django.utils import timezone
+from datetime import datetime, timedelta
+from django.utils import timezone
+from .models import Student, Question, Answer, Result
+import csv
+from django.contrib.auth.decorators import login_required, user_passes_test
+
 
 # Create your views here.
 def index(request):
     return render(request, "app1/index.html")
 
-
-# views.py
-from django.shortcuts import render, redirect
-from .forms import LoginForm
-from .models import Student
-
 def login_view(request):
+    form = LoginForm(request.POST or None)
+
     if request.method == 'POST':
-        form = LoginForm(request.POST)
         if form.is_valid():
-            enrollment = form.cleaned_data['enrollment_number']
+            enrollment_number = form.cleaned_data['enrollment_number']
             dob = form.cleaned_data['dob']
+
             try:
-                student = Student.objects.get(enrollment_number=enrollment, dob=dob)
-                # Store student id in session
+                student = Student.objects.get(enrollment_number=enrollment_number, dob=dob)
+                # Store student in session
                 request.session['student_id'] = student.id
-                # Optional: Set session expiry to 1 hour
-                request.session.set_expiry(3600)  # 1 hour
-                return redirect('instructions')  # After successful login
+                messages.success(request, f"Welcome, {student.name}!")
+                return redirect('instructions')  # Change this to your exam dashboard route
             except Student.DoesNotExist:
-                form.add_error(None, 'Invalid Enrollment Number or DOB')
-    else:
-        form = LoginForm()
+                messages.error(request, "Invalid enrollment number or date of birth.")
+    
     return render(request, 'app1/login.html', {'form': form})
 
 
@@ -45,12 +50,6 @@ def logout_view(request):
     return redirect('login')  # Redirect to login page
 
 
-# views.py
-
-from django.shortcuts import render, redirect
-from .models import Student, Question, Answer, Result
-from django.utils import timezone
-
 def instructions_view(request):
     student_id = request.session.get('student_id')
     if not student_id:
@@ -58,64 +57,70 @@ def instructions_view(request):
     
     student = Student.objects.get(id=student_id)
     return render(request, 'app1/instructions.html', {'student_name': student.name})
-'''
+
+
+    # student_id = request.session.get('student_id')
+    # if not student_id:
+    #     return redirect('login')
+    # prevent resubmit the test
+    # if Result.objects.filter(student=student).exists():
+    #     return redirect('thank_you')
+  
+
 def start_exam_view(request):
-    print("hello")
     student_id = request.session.get('student_id')
     if not student_id:
         return redirect('login')
 
     student = Student.objects.get(id=student_id)
-    questions = Question.objects.all()
 
     if request.method == 'POST':
-        for question in questions:
-            qid = str(question.id)
-            answer_value = request.POST.get(f'question_{qid}')
-            if answer_value:
-                Answer.objects.update_or_create(
-                    student=student,
-                    question=question,
-                    defaults={'selected_answer': answer_value.upper()}
-                )
-        return redirect('submit_exam')
+        if 'test' in request.POST:
+            selected_test = request.POST.get('test')
+            request.session['selected_test'] = selected_test
 
-    return render(request, 'app1/start_exam.html', {'questions': questions})
-'''
-def start_exam_view(request):
-    print("onstart exam")
-    student_id = request.session.get('student_id')
-    if not student_id:
-        return redirect('login')
+            # Set exam timing only once
+            if 'start_time' not in request.session:
+                start_time = datetime.now()
+                end_time = start_time + timedelta(minutes=10)
+                request.session['start_time'] = start_time.isoformat()
+                request.session['end_time'] = end_time.isoformat()
+                print("✅ Start Time Set:", request.session['start_time'])
+                print("✅ End Time Set:", request.session['end_time'])
 
-    student = Student.objects.get(id=student_id)
+        else:
+            selected_test = request.session.get('selected_test')
+            questions = Question.objects.filter(subject=selected_test)
+            for question in questions:
+                answer_value = request.POST.get(f'question_{question.id}')
+                if answer_value:
+                    print(f"💾 Saving answer: Q{question.id} = {answer_value}")
+                    Answer.objects.update_or_create(
+                        student=student,
+                        question=question,
+                        defaults={'selected_answer': answer_value.upper()}
+                    )
+                else:
+                    print(f"⚠️ No answer selected for Q{question.id}")
+            return redirect('submit_exam')
 
-    # If this is the POST request from the instructions page, save the selected test
-    if request.method == 'POST' and 'test' in request.POST:
-        selected_test = request.POST.get('test')
-        request.session['selected_test'] = selected_test
-        print("Test selected and saved to session:", selected_test)
-    else:
-        selected_test = request.session.get('selected_test')
-
-    print("Selected Test from session:", selected_test)
+    selected_test = request.session.get('selected_test')
+    if not selected_test:
+        return redirect('instructions')
 
     questions = Question.objects.filter(subject=selected_test)
-    print(f"Found {questions.count()} questions for subject: {selected_test}")
 
-    # If POST (submitting answers), handle that
-    if request.method == 'POST' and 'test' not in request.POST:
-        for question in questions:
-            qid = str(question.id)
-            answer_value = request.POST.get(f'question_{qid}')
-            if answer_value:
-                Answer.objects.update_or_create(
-                    student=student,
-                    question=question,
-                    defaults={'selected_answer': answer_value.upper()}
-                )
+    # Convert session strings to datetime objects
+    start_time_str = request.session.get('start_time')
+    end_time_str = request.session.get('end_time')
+    start_time = datetime.fromisoformat(start_time_str) if start_time_str else None
+    end_time = datetime.fromisoformat(end_time_str) if end_time_str else None
 
-    return render(request, 'app1/start_exam.html', {'questions': questions})
+    return render(request, 'app1/start_exam.html', {
+        'questions': questions,
+        'start_time': start_time,
+        'end_time': end_time
+    })
 
 
 
@@ -125,37 +130,104 @@ def submit_exam_view(request):
         return redirect('login')
 
     student = Student.objects.get(id=student_id)
+
+    # Prevent double submission
+    if Result.objects.filter(student=student).exists():
+        print("🛑 Submission blocked: student already has result.")
+        return redirect('thank_you')
+
+    selected_test = request.session.get('selected_test')
+    questions = Question.objects.filter(subject=selected_test)
+
+    # ✅ Save answers
+    print(f"\n💾 Saving answers for student ID: {student.id} | Subject: {selected_test}")
+    for question in questions:
+        answer_value = request.POST.get(f'question_{question.id}')
+        if answer_value:
+            print(f"📝 Q{question.id}: Selected Answer = {answer_value}")
+            Answer.objects.update_or_create(
+                student=student,
+                question=question,
+                defaults={'selected_answer': answer_value.upper()}
+            )
+        else:
+            print(f"⚠️ Q{question.id} was skipped.")
+
+    # ✅ Fetch saved answers now
     answers = Answer.objects.filter(student=student)
-    score = 0
+    total_questions = answers.count()
+    correct_answers = 0
+    attempted = 0
+
+    print(f"\n📊 Submitting exam for student ID: {student_id}")
+    print(f"🧾 Total Answers Fetched: {total_questions}")
 
     for answer in answers:
-        if answer.selected_answer == answer.question.correct_answer:
-            score += 1
+        qid = answer.question.id
+        qtext = answer.question.text
+        correct = answer.question.correct_answer.strip().upper()
+
+        if answer.selected_answer:
+            selected = answer.selected_answer.strip().upper()
+            attempted += 1
+
+            print(f"🔍 Q{qid}: {qtext}")
+            print(f"✅ Correct: {correct}, 📝 Selected: {selected}")
+
+            if selected == correct:
+                correct_answers += 1
+                print("✅ Result: CORRECT")
+            else:
+                print("❌ Result: WRONG")
+        else:
+            print(f"⚠️ Q{qid} skipped: No answer selected")
+
+    wrong_answers = attempted - correct_answers
+    score = correct_answers
+    percentage = (score / questions.count()) * 100 if questions else 0
+
+    print(f"\n📋 Summary for Student {student.name}:")
+    print(f"✅ Correct: {correct_answers}, ❌ Wrong: {wrong_answers}, 🎯 Attempted: {attempted}, 📈 Score: {score}, 🧮 Percentage: {round(percentage, 2)}%")
 
     Result.objects.update_or_create(
         student=student,
         defaults={'score': score, 'submitted_at': timezone.now()}
     )
 
+    # Clear session timing
+    request.session.pop('start_time', None)
+    request.session.pop('end_time', None)
+
+    request.session['result_data'] = {
+        'score': score,
+        'correct': correct_answers,
+        'wrong': wrong_answers,
+        'attempted': attempted,
+        'total': questions.count(),
+        'percentage': round(percentage, 2)
+    }
+
     return redirect('thank_you')
 
+
 def thank_you_view(request):
-    return render(request, 'app1/thank_you.html')
+    student_id = request.session.get('student_id')
+    if not student_id:
+        return redirect('login')
+
+    student = Student.objects.get(id=student_id)
+    result = Result.objects.get(student=student)
+    result_data = request.session.get('result_data', {})
+
+    return render(request, 'app1/thank_you.html', {
+        'student_name': student.name,
+        'result_data': result_data,
+        'score': result.score
+    })
 
 
 
-import csv
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .models import Question
-
-
-import csv
-from django.contrib import messages
-from django.shortcuts import render, redirect
-from .models import Question
-
+@staff_member_required
 def upload_questions_view(request):
     if request.method == 'POST' and request.FILES.get('csv_file'):
         csv_file = request.FILES['csv_file']
@@ -193,3 +265,7 @@ def upload_questions_view(request):
             return redirect('upload_questions')
 
     return render(request, 'app1/upload_questions.html')
+
+
+
+

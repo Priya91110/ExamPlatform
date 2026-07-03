@@ -1,0 +1,11 @@
+text,option_a,option_b,option_c,option_d,correct_answer,subject
+What is the keyword used to define a function in Python?,func,define,function,def,D,python
+Which of the following is a mutable data type in Python?,tuple,string,list,int,C,python
+What is the output of 3 * 'a' in Python?,aaa,a3,error,aa,A,python
+How do you insert comments in Python code?,//comment,#comment,/*comment*/,--comment,B,python
+Which operator is used for exponentiation in Python?,^,**,%,//,B,python
+What does the len() function do?,Returns the length of an object,Returns the type of object,Returns the value,Returns the name,A,python
+What is the output of bool(0) in Python?,True,False,None,Error,B,python
+Which module in Python is used to generate random numbers?,random,math,time,os,A,python
+How do you start a for loop in Python?,for(i=0;i<10;i++),foreach x in range(10),for x in range(10):,loop x from 1 to 10,C,python
+What is the correct file extension for Python files?,.pt,.pyt,.py,.python,C,python
