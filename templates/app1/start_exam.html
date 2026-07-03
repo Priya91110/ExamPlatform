@@ -1,4 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>Online Examination</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    background:#eef2f7;
+}
+
+.header{
+    background:linear-gradient(135deg,#3b82f6,#2563eb);
+    color:white;
+    padding:20px 40px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 5px 15px rgba(0,0,0,.2);
+}
+
+.header h2{
+    font-size:28px;
+}
+
+.container{
+    width:85%;
+    margin:35px auto;
+}
+
+.question-card{
+
+    background:white;
+    border-radius:15px;
+    padding:25px;
+    margin-bottom:25px;
+    box-shadow:0 10px 20px rgba(0,0,0,.08);
+    transition:.3s;
+
+}
+
+.question-card:hover{
+
+    transform:translateY(-3px);
+
+}
+
+.question-title{
+
+    font-size:20px;
+    color:#1f2937;
+    margin-bottom:20px;
+    font-weight:bold;
+
+}
+
+.option{
+
+    margin:12px 0;
+    padding:12px 15px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    cursor:pointer;
+    transition:.3s;
+
+}
+
+.option:hover{
+
+    background:#edf4ff;
+    border-color:#3b82f6;
+
+}
+
+.option input{
+
+    margin-right:10px;
+
+}
+
+.submit{
+
+    text-align:center;
+    margin:40px 0;
+
+}
+
+.submit button{
+
+    background:#16a34a;
+    color:white;
+    border:none;
+    padding:15px 45px;
+    font-size:18px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:.3s;
+
+}
+
+.submit button:hover{
+
+    background:#15803d;
+    transform:scale(1.05);
+
+}
+
+.empty{
+
+    text-align:center;
+    color:red;
+    font-size:20px;
+
+}
+
+@media(max-width:768px){
+
+.container{
+
+width:95%;
+
+}
+
+.header{
+
+flex-direction:column;
+
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+    <h2>🎓 Online Examination System</h2>
+
+    <h3>Total Questions : {{ questions|length }}</h3>
+
+</div>
+
+<div class="container">
+
+<form action="{% url 'submit_exam' %}" method="POST">
+
+{% csrf_token %}
+
+{% if questions %}
+
+{% for question in questions %}
+
+<div class="question-card">
+
+<div class="question-title">
+
+Q{{ forloop.counter }}.
+{{ question.text }}
+
+</div>
+
+<label class="option">
+
+<input type="radio"
+name="question_{{ question.id }}"
+value="A">
+
+A. {{ question.option_a }}
+
+</label>
+
+<label class="option">
+
+<input type="radio"
+name="question_{{ question.id }}"
+value="B">
+
+B. {{ question.option_b }}
+
+</label>
+
+<label class="option">
+
+<input type="radio"
+name="question_{{ question.id }}"
+value="C">
+
+C. {{ question.option_c }}
+
+</label>
+
+<label class="option">
+
+<input type="radio"
+name="question_{{ question.id }}"
+value="D">
+
+D. {{ question.option_d }}
+
+</label>
+
+</div>
+
+{% endfor %}
+
+{% else %}
+
+<div class="empty">
+
+No Questions Available.
+
+</div>
+
+{% endif %}
+
+<div class="submit">
+
+<button type="submit">
+
+Submit Exam
+
+</button>
+
+</div>
+
+</form>
+
+</div>
+
+</body>
+
+</html>
+
+{% comment %} 
 <form action="{% url 'submit_exam' %}" method="post">
     {% csrf_token %}
     {% if questions %}
@@ -31,4 +277,4 @@
     <div class="text-center">
         <button type="submit" class="btn btn-success">Submit Exam</button>
     </div>
-</form>
+</form> {% endcomment %}
